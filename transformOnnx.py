@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 20 13:28:20 2022
-
-@author: ASUS
+@author: Greenyuan
 """
 import numpy as np
 import torch
