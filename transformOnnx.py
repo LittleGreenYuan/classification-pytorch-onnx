@@ -21,7 +21,7 @@ from utils.utils_fit import fit_one_epoch
 #   是否使用Cuda
 #   没有GPU可以设置成False
 #----------------------------------------------------#
-Cuda            = False
+Cuda            = True
 
 #----------------------------------------------------#
 #   训练自己的数据集的时候一定要注意修改classes_path
@@ -173,7 +173,7 @@ model_test = get_model_from_name[backbone](num_classes = num_classes, pretrained
 
 
 
-model_statedict = torch.load("model_data/mobilenet_catvsdog.pth",map_location=lambda storage,loc:storage)   #导入Gpu训练模型，导入为cpu格式
+model_statedict = torch.load("model_data/mobilenet_catvsdog.pth",map_location=lambda storage,loc:storage)   #导入Gpu训练模型，导入为cpu格式，路径是torch保存的模型
 model_test.load_state_dict(model_statedict)  #将参数放入model_test中
 model_test.eval()  # 测试，看是否报错
 #下面开始转模型，cpu格式下
@@ -181,24 +181,23 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 dummy_input = torch.randn(1,3, 224, 224,device=device)
 input_names = ["input"]
 output_names = ["output"]
-torch.onnx.export(model_test, dummy_input, "model_.onnx", opset_version=9, verbose=False, output_names=["output"])
+torch.onnx.export(model_test, dummy_input, "model_.onnx", opset_version=9, verbose=False, output_names=["output"])#这里的具体使用可以参照结尾的引用说明
 
 
 #用于验证onnx模型是否能够正确使用
 import cv2 as cv
 import numpy as np
-
+#定义对图像进行重新归一化的函数
 def img_process(image):
     mean = np.array([0.5,0.5,0.5],dtype=np.float32).reshape(1,1,3)
     std = np.array([0.5,0.5,0.5],dtype=np.float32).reshape(1,1,3)
     new_img = ((image/255. -mean)/std).astype(np.float32)
     return new_img
 
-img = cv.imread("cat.jpg")
-img_t = cv.resize(img,(224,224))    #将图片改为模型适用的尺寸
+img = cv.imread("cat.jpg")#读取用于测试的图片
+img_t = cv.resize(img,(224,224))#将图片改为模型适用的尺寸
 img_t = img_process(img_t)
-#img_t = np.transpose(img_t,[2,0,1])
-#img_t = img_t[np.newaxis,:]   #扩展一个新维度
+
 
 layerNames = ["output"]   # 这里的输出的名称应该于前面的转模型时候定义的一致
 blob=cv.dnn.blobFromImage(img_t,scalefactor=1.0,swapRB=True,crop=False)  # 将image转化为 1x3x64x64 格式输入模型中
